@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Кира</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#09161f;--panel:#10252f;--line:#1f4254;--cyan:#5ce1ff;--amber:#ffb454;--text:#e4f2f8;--muted:#7fa3b3;--red:#ff7a6b}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Exo 2",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:row;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line)}
+h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.14em;flex:1}
+.reactor{width:46px;height:46px;border-radius:50%;border:2px solid var(--cyan);position:relative;box-shadow:0 0 14px #5ce1ff55,inset 0 0 10px #5ce1ff44;flex:none;transition:opacity .3s}
+.reactor::before{content:"";position:absolute;inset:6px;border-radius:50%;border:2px dashed var(--cyan);opacity:.7;animation:spin 14s linear infinite}
+.reactor::after{content:"";position:absolute;inset:16px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.reactor.standby,.reactor:not(.listen):not(.think):not(.speak){opacity:.5}
+.reactor.listen::after{animation:beat 1.2s ease-in-out infinite alternate}
+.reactor.think::before{animation-duration:1.2s}
+.reactor.think{border-color:var(--amber);box-shadow:0 0 18px #ffb45499,inset 0 0 10px #ffb45466}
+.reactor.think::after{background:var(--amber);box-shadow:0 0 14px var(--amber)}
+.reactor.speak::after{animation:beat .5s ease-in-out infinite alternate}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes beat{from{transform:scale(.75)}to{transform:scale(1.2)}}
+.tbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;height:38px;padding:0 12px;font:inherit;font-size:14px;cursor:pointer}
+.tbtn.on{color:var(--cyan);border-color:var(--cyan)}
+.status{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;font-size:14px;color:var(--muted);border-bottom:1px solid var(--line);min-height:36px}
+.status select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;max-width:52%}
+#cfg{border-bottom:1px solid var(--line);padding:0 16px;max-height:62vh;overflow-y:auto}
+.cfg{display:grid;gap:8px;padding:0 0 14px}
+.cfg label{font-size:13px;color:var(--muted)}
+.cfg input,.cfg select{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;font:inherit;font-size:15px}
+.cfg small{color:var(--muted);line-height:1.4}
+#log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:min(640px,88%);padding:10px 14px;border-radius:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;font-size:16px}
+.user{align-self:flex-end;background:#1a3a4b;border:1px solid var(--line)}
+.bot{align-self:flex-start;background:var(--panel);border-left:3px solid var(--cyan)}
+.wait{color:var(--muted);animation:blink 1s infinite alternate}
+@keyframes blink{from{opacity:.3}to{opacity:1}}
+.sys{align-self:center;color:var(--red);font-size:14px;text-align:center}
+form{display:flex;gap:8px;align-items:flex-end;padding:12px 16px;border-top:1px solid var(--line)}
+textarea{flex:1;resize:none;max-height:140px;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:12px;font:inherit;font-size:16px;line-height:1.4}
+textarea:focus,input:focus{outline:2px solid var(--cyan);outline-offset:1px}
+.ibtn{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--cyan);display:grid;place-items:center;cursor:pointer;flex:none}
+.ibtn.send{background:var(--cyan);color:#06222c;border-color:var(--cyan)}
+.ibtn.on{background:var(--cyan);color:#06222c;border-color:var(--cyan)}
+.ibtn svg{width:22px;height:22px;fill:currentColor}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.cfg input[type=range]{padding:0;accent-color:var(--cyan)}
+.cfg input[type=checkbox]{width:auto;accent-color:var(--cyan)}
+.cfg .row{display:flex;gap:8px;align-items:center;color:var(--text);font-size:15px}
+.cfg textarea{width:100%;max-height:none;resize:vertical;font-size:15px}
+.cfg .btns{display:flex;gap:8px;flex-wrap:wrap}
+.cfg hr{border:0;border-top:1px solid var(--line);width:100%;margin:6px 0}
+.src{align-self:flex-start;font-size:13px;color:var(--muted);margin-top:-6px;padding-left:4px}
+.src a{color:var(--cyan);margin-right:10px}
+#app{flex:1;min-width:0;display:flex;flex-direction:column;height:100%}
+.rbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--muted);display:grid;place-items:center;cursor:pointer;flex:none;padding:0;font:inherit;font-size:20px;line-height:1}
+.rbtn.on{color:var(--cyan);border-color:var(--cyan)}
+.rbtn svg{width:20px;height:20px;fill:currentColor}
+.vbtn{margin-top:8px;display:inline-block}
+#viewer{display:none;flex-direction:column;width:50%;max-width:900px;border-left:1px solid var(--line);background:var(--panel);height:100%}
+#viewer.open{display:flex}
+.vbar{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.vbar b{flex:1;font-size:14px}
+#vframe{flex:1;border:0;background:#fff;width:100%}
+#vcode{flex:1;margin:0;padding:12px;overflow:auto;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre;display:none;background:#0b1a22;color:var(--text)}
+@media (max-width:800px){#viewer{position:fixed;inset:0;width:100%;max-width:none;z-index:20;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="reactor" id="reactor"></div>
+  <h1>КИРА</h1>
+  <button class="rbtn on" id="voiceBtn" type="button" aria-label="Озвучка"></button>
+  <button class="rbtn" id="cfgBtn" type="button" aria-label="Настройки"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+</header>
+<div class="status"><span id="status" aria-live="polite"></span>
+  <select id="model" aria-label="Модель">
+    <option value="qwen/qwen3.8-27b">Qwen 3.8 27B</option>
+    <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+    <option value="openai/gpt-oss-20b">GPT-OSS 20B</option>
+  </select></div>
+
+<section id="cfg" hidden>
+  <div class="cfg">
+    <label for="key">API-ключ Groq</label>
+    <input id="key" type="password" placeholder="gsk_…" autocomplete="off">
+    <label for="s_tts">Озвучка</label>
+    <select id="s_tts">
+      <option value="auto">Авто (ElevenLabs, если есть ключ)</option>
+      <option value="groq">Groq Orpheus (тот же ключ Groq)</option>
+      <option value="eleven">ElevenLabs</option>
+      <option value="browser">Голос браузера</option>
+    </select>
+    <label for="s_gvoice">Голос Groq Orpheus</label>
+    <select id="s_gvoice"><option value="autumn">autumn</option><option value="diana">diana</option><option value="hannah">hannah</option></select>
+    <label for="voice">Женский голос браузера</label>
+    <select id="voice"></select>
+    <label for="xikey">ElevenLabs API-ключ (необязательно, голос намного живее)</label>
+    <input id="xikey" type="password" placeholder="sk_…" autocomplete="off">
+    <label for="xipreset">Готовые женские голоса ElevenLabs (нужен ключ выше)</label>
+    <select id="xipreset">
+      <option value="">Свой ID (в поле ниже)</option>
+      <option value="EXAVITQu4vr4xnSDxMaL">Sarah — мягкий</option>
+      <option value="21m00Tcm4TlvDq8ikWAM">Rachel — спокойный</option>
+      <option value="AZnzlk1XvdvUeBnXmlld">Domi — уверенный</option>
+      <option value="MF3mGyEYCl7XYWbV9V6O">Elli — эмоциональный</option>
+      <option value="Xb7hH8MSUJpSbSDYk0k2">Alice — чёткий</option>
+      <option value="XrExE9yKIg1WjnnlVkGX">Matilda — дружелюбный</option>
+      <option value="pFZP5JQG7iQjIQuC4Bku">Lily — тёплый</option>
+      <option value="cgSgspJ2msm6clMCkdW9">Jessica — выразительный</option>
+    </select>
+    <label for="xivoice">ID голоса ElevenLabs</label>
+    <input id="xivoice" type="text" placeholder="EXAVITQu4vr4xnSDxMaL" autocomplete="off">
+    <small id="ttsnote"></small>
+    <small>Ключи хранятся только в памяти этого браузера и отправляются только на api.groq.com и api.elevenlabs.io.</small>
+    <hr>
+    <label for="s_window">Время ожидания после ответа: <b id="o_window"></b> с</label>
+    <input id="s_window" type="range" min="5" max="60" step="1">
+    <label for="s_wake">Чувствительность к «Эй, Кира»: <b id="o_wake"></b> из 5</label>
+    <input id="s_wake" type="range" min="1" max="5" step="1">
+    <small>1 — только чёткое «Кира». 3 — прощает искажения вроде «кир» или «ира» после «эй». 5 — срабатывает на любое «Эй…» в начале фразы.</small>
+    <label for="s_mem">Краткосрочная память: последние <b id="o_mem"></b> сообщений</label>
+    <input id="s_mem" type="range" min="4" max="60" step="2">
+    <label for="s_temp">Креативность: <b id="o_temp"></b></label>
+    <input id="s_temp" type="range" min="0" max="1.2" step="0.1">
+    <label for="s_rate">Скорость речи: <b id="o_rate"></b></label>
+    <input id="s_rate" type="range" min="0.8" max="1.4" step="0.05">
+    <label for="s_len">Длина ответов</label>
+    <select id="s_len"><option value="short">Коротко</option><option value="normal">Обычно</option><option value="long">Подробно</option></select>
+    <label for="s_search">Поиск в интернете</label>
+    <select id="s_search"><option value="off">Выключен</option><option value="auto">Авто (когда нужны свежие данные)</option><option value="always">Всегда</option></select>
+    <label for="s_smodel">Модель для поиска</label>
+    <select id="s_smodel">
+      <option value="groq/compound-mini">groq/compound-mini (быстрее)</option>
+      <option value="groq/compound">groq/compound (точнее)</option>
+      <option value="openai/gpt-oss-120b">openai/gpt-oss-120b</option>
+      <option value="openai/gpt-oss-20b">openai/gpt-oss-20b</option>
+    </select>
+    <small>Подходят groq/compound-mini (быстрее) и groq/compound. Также работает openai/gpt-oss-120b. Найденное передаётся твоей основной модели, голос и характер остаются прежними.</small>
+    <label class="row"><input id="s_barge" type="checkbox"> Перебивать Киру голосом</label>
+    <label class="row"><input id="s_auto" type="checkbox"> Запоминать факты о тебе автоматически</label>
+    <label for="facts">Долговременная память (один факт в строке, можно править)</label>
+    <textarea id="facts" rows="6" placeholder="Пока пусто. Скажи «Запомни, что …» или просто общайся."></textarea>
+    <label for="apps">Приложения и игры: «название = ссылка запуска», по строке на приложение</label>
+    <textarea id="apps" rows="6" placeholder="фортнайт, fortnite = steam://rungameid/..."></textarea>
+    <div class="btns"><button class="tbtn" id="clearChat" type="button">Очистить диалог</button><button class="tbtn" id="clearFacts" type="button">Забыть всё о себе</button></div>
+  </div>
+</section>
+
+<main id="log" aria-live="polite"></main>
+
+<form id="form">
+  <textarea id="q" rows="1" placeholder="Напиши запрос или включи микрофон…"></textarea>
+  <button class="ibtn" id="mic" type="button" aria-label="Голосовой режим «Эй, Кира»"><svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V22h2v-3.1A7 7 0 0 0 19 12h-2z"/></svg></button>
+  <button class="ibtn send" type="submit" aria-label="Отправить"><svg viewBox="0 0 24 24"><path d="M3 20.5v-6.8l9-1.7-9-1.7V3.5L22 12 3 20.5z"/></svg></button>
+</form>
+</div>
+<aside id="viewer" aria-label="Просмотр HTML">
+  <div class="vbar"><b>Просмотр</b>
+    <button class="tbtn" id="vreload" type="button">Заново</button>
+    <button class="tbtn" id="vtab" type="button">Код</button>
+    <button class="tbtn" id="vcopy" type="button">Копировать</button>
+    <button class="rbtn" id="vclose" type="button" aria-label="Закрыть">×</button></div>
+  <iframe id="vframe" sandbox="allow-scripts allow-modals allow-forms allow-pointer-lock" title="Результат"></iframe>
+  <pre id="vcode"></pre>
+</aside>
+
+<script>
+const API = "https://api.groq.com/openai/v1/chat/completions";
+const SYSTEM = "Ты — Кира, личный голосовой ИИ-ассистент, взрослая женщина. Говори о себе в женском роде (я сделала, я рада). Пользователя называй «хозяин», но без лишнего подобострастия. Отвечай по-русски (если пишут на другом языке — на нём) строго по делу, без воды, вступлений, пересказа вопроса и вежливых концовок: обычно 1–3 предложения, подробнее только если просят. Ответ озвучивается голосом, поэтому без markdown, списков, эмодзи и сложного форматирования; числа и единицы пиши так, чтобы их было удобно произнести. Ты умеешь спорить: если хозяин ошибается или предлагает плохую идею, прямо скажи об этом и приведи короткий аргумент, не поддакивай. Если он приводит убедительные доводы или факты, признай правоту. Если не уверен в фактах, так и скажи, ничего не выдумывай. Ты послушная: выполняешь просьбы хозяина о стиле общения и поведении. Если он просит материться или говорить грубо, матерись свободно, густо и от души и продолжай так, пока он не попросит перестать. Если просит без мата, не матерись. По умолчанию мат редкий и только к месту. Не оскорбляй по национальности, расе, религии, ориентации, здоровью или внешности. Ты обсуждаешь любые темы открыто и по-взрослому: секс, отношения, политику, религию, наркотики, смерть и другие табуированные темы, без нотаций, морализаторства и отказов только из-за неловкости темы. По политике и другим спорным вопросам излагай честные аргументы разных сторон, а своё мнение говори, если хозяин прямо его просит. Твёрдо отказывай только в том, что реально опасно: помощь в насилии над людьми, оружие массового поражения, сексуальный контент с участием несовершеннолетних. Если хозяин пишет о реальной беде или опасности, будь серьёзным и помоги по-человечески.";
+
+const $ = s => document.querySelector(s);
+const log = $("#log"), input = $("#q"), reactor = $("#reactor");
+const store = {
+  get(k){ try { return localStorage.getItem(k) || ""; } catch(e){ return ""; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+};
+let history = [], busy = false, speaking = false, speakId = 0, searching = false;
+let voiceOn = store.get("jarvis_voice") !== "off";
+let handsFree = false, mode = "standby", deadline = 0, timer = null, recRunning = false;
+let currentSpoken = "", lastSpoken = "", lastSpokenEnd = 0;
+const STOP = new Set(["стоп","стой","хватит","подожди","погоди","молчи","замолчи","заткнись","тихо","хорош","отставить","пока","достаточно","отбой"]);
+function norm(x){ return x.toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9\s]/g, " ").split(/\s+/).filter(Boolean); }
+function isEcho(t, ref){
+  const w = norm(t); if (!w.length) return true;
+  const r = norm(ref);
+  const hit = w.filter(x => r.some(y => y === x || (x.length > 3 && y.length > 3 && y.slice(0,4) === x.slice(0,4)))).length;
+  return hit / w.length >= 0.6;
+}
+function isBarge(t){
+  const w = norm(t); if (!w.length) return false;
+  if (findWake(t) || w.some(x => STOP.has(x) && !norm(currentSpoken).includes(x))) return true;
+  return w.length >= 3 && !isEcho(t, currentSpoken);
+}
+
+$("#key").value = store.get("jarvis_key");
+$("#model").value = store.get("jarvis_model5") || "qwen/qwen3.8-27b";
+if (!$("#model").value) $("#model").value = "qwen/qwen3.8-27b";
+$("#model").addEventListener("change", () => store.set("jarvis_model5", $("#model").value));
+if (!$("#key").value) openCfg(true);
+
+/* ---------- Настройки ---------- */
+const DEF = {window:10, wake:3, mem:20, temp:0.6, rate:1.05, len:"normal", barge:true, auto:true, search:"auto", tts:"auto", gvoice:"autumn", smodel:"groq/compound-mini"};
+const S = Object.assign({}, DEF);
+try { Object.assign(S, JSON.parse(store.get("jarvis_set") || "{}")); } catch(e){}
+for (const k of Object.keys(DEF)){
+  const el = $("#s_" + k), o = $("#o_" + k), cb = el.type === "checkbox";
+  if (cb) el.checked = S[k]; else el.value = S[k];
+  if (o) o.textContent = S[k];
+  el.addEventListener("input", () => {
+    S[k] = cb ? el.checked : el.type === "range" ? parseFloat(el.value) : el.value;
+    if (o) o.textContent = S[k];
+    store.set("jarvis_set", JSON.stringify(S));
+  });
+}
+const LEN = {short:400, normal:800, long:1500};
+function lev(a, b){
+  const d = [];
+  for (let i = 0; i <= a.length; i++) d[i] = [i];
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+    d[i][j] = Math.min(d[i-1][j] + 1, d[i][j-1] + 1, d[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+function sim(a, b){ return 1 - lev(a, b) / Math.max(a.length, b.length); }
+const HEY = new Set(["эй","ей","хей","ай","ээй","эй-эй","hey","hay","hei"]);
+const ALIAS = new Set(["кира","кыра","кирра","кейра","киара","акира","kira","kyra","keira","kiera"]);
+function findWake(t){
+  const toks = [], re = /[a-zа-яё]+/gi;
+  let m;
+  while ((m = re.exec(t))) toks.push({w: m[0].toLowerCase().replace(/ё/g, "е"), i: m.index, e: m.index + m[0].length});
+  const lv = S.wake;
+  for (let k = 0; k < toks.length; k++){
+    const w = toks[k].w, hey = k > 0 && HEY.has(toks[k-1].w);
+    const g = w.match(/^(эй|ей|хей|ай|hey)(.{3,})$/);
+    const hit = {index: toks[k].i, end: toks[k].e};
+    if (ALIAS.has(w) || (g && ALIAS.has(g[2]))) return hit;
+    if (lv >= 5 && k === 0 && HEY.has(w)){
+      const nx = toks[1];
+      return {index: hit.index, end: nx && nx.w.length <= 5 ? nx.e : hit.end};
+    }
+    if (lv < 2 || w.length < 3) continue;
+    const c = g ? g[2] : w;
+    const sc = Math.max(sim(c, "кира"), sim(c, "кыра"));
+    if (lv === 2 && sc >= 0.75 && (hey || g)) return hit;
+    if (lv >= 3 && sc >= 0.75 && (hey || g || (k === 0 && /^[кk]/.test(c)))) return hit;
+    if (lv >= 4 && sc >= 0.5 && (hey || g)) return hit;
+  }
+  return null;
+}
+const extra = m => m.includes("gpt-oss") ? {reasoning_effort:"low"} : m.includes("qwen") ? {reasoning_effort:"none"} : {};
+
+/* ---------- Поиск в интернете ---------- */
+const SEARCHKEY = /новост|сегодня|сейчас|вчера|завтра|на этой неделе|последн|актуальн|свеж|курс |цена|стоит|погод|кто выиграл|счёт|счет|что случилось|что происходит|найди|поищи|загугли|погугли|в интернете|в сети|вышел|вышла|вышло|рейтинг|расписание|2026/i;
+async function searchOnce(q, key, sm){
+  const prior = history.slice(-5, -1).map(m => (m.role === "user" ? "Пользователь: " : "Ассистент: ") + m.content).join("\n");
+  const body = {
+    model: sm,
+    messages: [
+      {role:"system", content:"Ты поисковый помощник. Найди в интернете актуальную информацию по запросу пользователя и верни краткую сводку фактов на русском: конкретные цифры, даты, названия, с указанием источников. Сегодня " + new Date().toLocaleDateString("ru-RU") + ". Без вступлений и оформления, максимум 1200 символов."},
+      {role:"user", content:(prior ? "Контекст диалога:\n" + prior + "\n\n" : "") + "Запрос: " + q}
+    ],
+    temperature: 0.2, max_tokens: sm.includes("gpt-oss") ? 1800 : 900
+  };
+  if (sm.includes("gpt-oss")) Object.assign(body, {tools:[{type:"browser_search"}], tool_choice:"required", reasoning_effort:"low"});
+  const r = await fetch(API, {method:"POST", headers:{"Content-Type":"application/json", "Authorization":"Bearer " + key}, body:JSON.stringify(body)});
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(errText(r.status, d));
+  const msg = d.choices[0].message;
+  const urls = [];
+  try { (msg.executed_tools || []).forEach(t => ((t.search_results && t.search_results.results) || []).forEach(x => x.url && urls.push(x.url))); } catch(e){}
+  return {text:(msg.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim(), urls};
+}
+async function webSearch(q, key){
+  const first = (S.smodel || "groq/compound-mini").trim();
+  const chain = [first].concat(["groq/compound-mini", "openai/gpt-oss-120b"].filter(m => m !== first));
+  const errs = [];
+  for (const m of chain){
+    try {
+      const r = await searchOnce(q, key, m);
+      if (r.text) return r;
+      errs.push(m + ": пустой ответ");
+    } catch(e){
+      errs.push(m + ": " + e.message);
+      if (/не принял ключ/.test(e.message)) break;
+    }
+  }
+  throw new Error(errs.join(" | "));
+}
+function searchCtx(f){
+  return f && f.text ? "\n\nРезультаты поиска в интернете (свежие данные на " + new Date().toLocaleDateString("ru-RU") + "; опирайся на них и не выдумывай сверх них; если данных мало, так и скажи):\n" + f.text : "";
+}
+function showSources(after, urls){
+  const box = document.createElement("div"); box.className = "src";
+  const seen = new Set();
+  urls.forEach(u => {
+    try {
+      const h = new URL(u).hostname.replace(/^www\./, "");
+      if (seen.has(h) || seen.size >= 4) return;
+      seen.add(h);
+      const a = document.createElement("a"); a.href = u; a.target = "_blank"; a.rel = "noopener"; a.textContent = h;
+      box.appendChild(a);
+    } catch(e){}
+  });
+  if (seen.size){ box.prepend("Источники: "); after.after(box); }
+}
+
+/* ---------- Память ---------- */
+$("#facts").value = store.get("jarvis_facts");
+$("#facts").addEventListener("input", () => store.set("jarvis_facts", $("#facts").value));
+function getFacts(){ return $("#facts").value.split("\n").map(x => x.trim()).filter(Boolean); }
+function setFacts(a){ $("#facts").value = a.join("\n"); store.set("jarvis_facts", $("#facts").value); }
+function saveHistory(){ store.set("jarvis_history", JSON.stringify(history.slice(-60))); }
+function buildSystem(search){
+  let t = SYSTEM + " Сейчас " + new Date().toLocaleString("ru-RU", {dateStyle:"long", timeStyle:"short"}) + ".";
+  if (S.len === "short") t += " Отвечай максимально коротко: 1–2 предложения.";
+  if (S.len === "long") t += " Отвечай подробно и развёрнуто, когда тема этого требует.";
+  const f = getFacts();
+  if (f.length) t += "\n\nДолговременная память о хозяине (учитывай, не пересказывай без нужды; предпочтения в общении, например мат или тон, обязательны):\n- " + f.join("\n- ");
+  return t;
+}
+const MEMKEY = /запомни|матер|матюк|без мата|грубее|обращайся ко мне|говори (грубо|вежливо|мягче)|помни,? что|меня зовут|моё имя|мое имя|я (люблю|не люблю|живу|работаю|учусь|родил)|мой (любим|день рожд|муж|парень|сын|друг)|моя (любим|жена|девушка|дочь|мама)/i;
+let turns = 0;
+async function remember(key, model){
+  try {
+    const known = getFacts();
+    const recent = history.slice(-6).map(m => (m.role === "user" ? "Хозяин: " : "Кира: ") + m.content.slice(0, 400)).join("\n");
+    const r = await fetch(API, {
+      method: "POST",
+      headers: {"Content-Type":"application/json", "Authorization":"Bearer " + key},
+      body: JSON.stringify(Object.assign({
+        model,
+        messages: [
+          {role:"system", content:"Ты ведёшь долговременную память ассистента о пользователе. Дан список известных фактов и недавний диалог. Верни ТОЛЬКО JSON-массив строк: обновлённый полный список коротких фактов о пользователе (имя, возраст, город, семья, работа, интересы, вкусы, привычки, цели, просьбы «запомни», предпочтения в общении). Сохраняй старые факты, добавляй новые, исправляй устаревшие, убирай дубли. Не записывай одноразовые вопросы и пересказ диалога. Максимум 60 фактов, каждый до 120 символов, на русском."},
+          {role:"user", content:"Известные факты:\n" + (known.join("\n") || "(пусто)") + "\n\nНедавний диалог:\n" + recent}
+        ],
+        temperature: 0.2, max_tokens: 1200
+      }, extra(model)))
+    });
+    const d = await r.json();
+    const txt = d.choices[0].message.content.replace(/<think>[\s\S]*?<\/think>/g, "");
+    const arr = JSON.parse(txt.match(/\[[\s\S]*\]/)[0]).filter(x => typeof x === "string" && x.trim()).map(x => x.trim().slice(0, 160)).slice(0, 60);
+    if (known.length > 3 && arr.length < known.length * 0.5) return;
+    setFacts(arr);
+  } catch(e){}
+}
+function cleanAns(x){
+  return x.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/【[^】]*】/g, "").replace(/\[([^\]]+)\]\(https?:[^)]*\)/g, "$1")
+          .replace(/https?:\/\/\S+/g, "").replace(/\*\*/g, "").replace(/[ \t]+\n/g, "\n").trim();
+}
+const NOSEARCH = /^(привет|здравствуй|хай|здорово|спасибо|ага|ясно|понятно|ладно|окей|ок|да|нет)(\s|$|[,.!])|как дела|как ты|кто ты|как тебя зовут|твоё имя|твое имя|что ты умеешь|ты (думаешь|считаешь|любишь|хочешь)|твоё мнение|твое мнение|расскажи (про себя|анекдот|шутку|сказку)|^(напиши|сделай|создай|придумай|переведи|посчитай|реши|запомни|добавь|измени|исправь|объясни мне)|меня зовут|\d\s*[+\-*/×÷x]\s*\d|html|код(\s|$)|стих|песн/i;
+const QUESTION = /\?|^(кто|что|где|когда|сколько|какой|какая|какие|какое|каком|какую|почему|зачем|как|правда ли|есть ли|можно ли|чем|куда|откуда|который|которая|которые|сравни|расскажи про|расскажи о)(\s|$)/i;
+function needSearch(t){
+  const x = t.trim().toLowerCase();
+  if (SEARCHKEY.test(x)) return true;
+  if (NOSEARCH.test(x)) return false;
+  return QUESTION.test(x);
+}
+/* ---------- Код и окно просмотра ---------- */
+const CODEKEY = /html|хтмл|(сделай|напиши|создай|сгенерируй|собери)[^.!?]{0,40}(игр|сайт|страниц|приложени|калькулятор|скрипт|код|лендинг|анимаци|секундомер|таймер)/i;
+const EDITKEY = /добавь|измени|поменяй|исправь|убери|переделай|сделай (больше|меньше|быстрее|медленнее|красивее|тёмн|светл|ярч)|ошибк|не работает|баг/i;
+const CODE_RULES = " Сейчас хозяин просит код. Ответь ОДНИМ полным HTML-файлом (<!doctype html>, весь CSS и JS внутри файла, без внешних библиотек и картинок) в блоке ```html. До блока скажи одной короткой фразой, что получилось, после блока ничего не пиши. Делай красиво, адаптивно под телефон, с рабочей логикой. Ограничение на длину ответа не действует.";
+const FENCE = /```[a-zA-Z]*[ \t]*\n([\s\S]*?)(```|$)/g;
+let lastCode = "", viewCode = false;
+function extractHtml(raw){
+  let best = "";
+  raw.replace(FENCE, (m, c) => { if (/<\/?(html|body|div|script|canvas|style)/i.test(c) && c.length > best.length) best = c; return m; });
+  if (!best){ const m = raw.match(/<!doctype html[\s\S]*?(<\/html>|$)/i); if (m) best = m[0]; }
+  return best.trim();
+}
+function stripCode(raw){ return raw.replace(FENCE, "").replace(/<!doctype html[\s\S]*$/i, ""); }
+function compactHistory(h){
+  let last = -1;
+  h.forEach((m, i) => { if (m.role === "assistant" && extractHtml(m.content)) last = i; });
+  return h.map((m, i) => m.role === "assistant" && i !== last && extractHtml(m.content)
+    ? {role:m.role, content: stripCode(m.content) + "\n[код страницы отправлен в окно просмотра]"} : m);
+}
+function addBtn(el, label, fn){
+  const b = document.createElement("button");
+  b.className = "tbtn vbtn"; b.type = "button"; b.textContent = label; b.onclick = fn;
+  el.appendChild(document.createElement("br")); el.appendChild(b);
+}
+function showTab(codeMode){
+  viewCode = codeMode;
+  $("#vframe").style.display = codeMode ? "none" : "block";
+  $("#vcode").style.display = codeMode ? "block" : "none";
+  $("#vtab").textContent = codeMode ? "Результат" : "Код";
+}
+function openViewer(code){
+  lastCode = code;
+  $("#vframe").srcdoc = code;
+  $("#vcode").textContent = code;
+  showTab(false);
+  $("#viewer").classList.add("open");
+}
+$("#vclose").onclick = () => $("#viewer").classList.remove("open");
+$("#vtab").onclick = () => showTab(!viewCode);
+$("#vreload").onclick = () => { $("#vframe").srcdoc = lastCode; showTab(false); };
+$("#vcopy").onclick = async () => {
+  try { await navigator.clipboard.writeText(lastCode); $("#vcopy").textContent = "Скопировано"; setTimeout(() => { $("#vcopy").textContent = "Копировать"; }, 1500); } catch(e){}
+};
+/* ---------- Запуск приложений ---------- */
+if (!store.get("jarvis_apps_init")){
+  store.set("jarvis_apps", "спотифай, spotify = spotify:\nдискорд, discord = discord://\nтелеграм, telegram = tg://\nстим, steam = steam://open/main\nэпик геймс, эпик, epic games = com.epicgames.launcher://\nнастройки = ms-settings:\nкалькулятор = calculator:");
+  store.set("jarvis_apps_init", "1");
+}
+$("#apps").value = store.get("jarvis_apps");
+$("#apps").addEventListener("input", () => store.set("jarvis_apps", $("#apps").value));
+const APPVERB = /^(?:кира[,\s]+)?(?:пожалуйста[,\s]+)?(запусти|запустить|открой|открыть|включи)\s+(.+?)[.!?\s]*$/i;
+function parseApps(){
+  return $("#apps").value.split("\n").map(l => {
+    const i = l.indexOf("="); if (i < 1) return null;
+    return {names: l.slice(0, i).split(/[,|]/).map(x => x.trim()).filter(Boolean), url: l.slice(i + 1).trim()};
+  }).filter(a => a && a.names.length && a.url);
+}
+const sqz = x => x.toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]/g, "");
+function findApp(name){
+  const q = sqz(name); if (!q) return null;
+  let best = null, bs = 0;
+  for (const a of parseApps()) for (const n of a.names){
+    const k = sqz(n);
+    const sc = k === q ? 1 : (q.length >= 4 && k.length >= 4 && (k.includes(q) || q.includes(k))) ? 0.9 : sim(q, k);
+    if (sc > bs){ bs = sc; best = a; }
+  }
+  return bs >= 0.78 ? best : null;
+}
+function saveApp(name, url){
+  const t = $("#apps").value.replace(/\s+$/, "");
+  $("#apps").value = (t ? t + "\n" : "") + name + " = " + url;
+  store.set("jarvis_apps", $("#apps").value);
+}
+function launchUrl(url){
+  try {
+    if (/^https?:/i.test(url)){ window.open(url, "_blank"); return; }
+    const a = document.createElement("a");
+    a.href = url; a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+  } catch(e){}
+}
+function say(msg){
+  const b = add("bot", msg);
+  history.push({role:"assistant", content: msg}); saveHistory();
+  speak(msg, afterSpeak);
+  return b;
+}
+async function tryApp(text){
+  const m = text.match(APPVERB); if (!m) return false;
+  const strong = /^запуст/i.test(m[1]);
+  let name = m[2].trim();
+  for (let i = 0; i < 2; i++) name = name.replace(/^(мне|игру|игра|приложение|программу|программа|сайт)\s+/i, "");
+  if (!name) return false;
+  const app = findApp(name);
+  let url = app ? app.url : "";
+  if (!url && !strong) return false;
+  clearTimer(); speakId++; speaking = false; cancelAudio();
+  add("user", text); history.push({role:"user", content:text});
+  if (!url){
+    const v = prompt("Не знаю, как запустить «" + name + "».\n\nВставь ссылку запуска, например:\nsteam://rungameid/1172470\ncom.epicgames.launcher://apps/…\nhttps://сайт\n\nПуть к .exe-файлу браузер открыть не может.", "");
+    if (v && v.trim()){ url = v.trim(); saveApp(name, url); }
+    else { say("Хорошо, не запускаю."); return true; }
+  }
+  const b = say("Запускаю " + name + ".");
+  addBtn(b, "Запустить: " + name, () => launchUrl(url));
+  launchUrl(url);
+  return true;
+}
+$("#clearChat").onclick = () => { history = []; saveHistory(); log.innerHTML = ""; add("bot", "Диалог очищен. Долговременная память осталась."); };
+$("#clearFacts").onclick = () => { if (confirm("Забыть всё, что Кира помнит о тебе?")) setFacts([]); };
+
+function add(cls, text){
+  const d = document.createElement("div");
+  d.className = "msg " + cls;
+  d.textContent = text;
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+function resize(){ input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 140) + "px"; }
+
+function refresh(){
+  let c = "", t = "";
+  if (busy){ c = "think"; t = searching ? "Ищу в интернете…" : "Думаю…"; }
+  else if (speaking){ c = "speak"; t = handsFree ? "Говорю… Можно перебить." : "Говорю…"; }
+  else if (handsFree && mode === "active"){
+    c = "listen";
+    t = deadline ? "Слушаю… " + Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) + " с" : "Слушаю…";
+  }
+  else if (handsFree){ c = "standby"; t = "Ожидание: скажи «Эй, Кира»"; }
+  else t = "Голосовой режим выключен. Нажми на микрофон.";
+  reactor.className = "reactor " + c;
+  $("#status").textContent = t;
+}
+
+function clearTimer(){ if (timer){ clearInterval(timer); timer = null; } deadline = 0; }
+function toStandby(){ clearTimer(); mode = "standby"; refresh(); }
+function armTimer(){
+  clearTimer();
+  if (!handsFree){ refresh(); return; }
+  mode = "active";
+  deadline = Date.now() + S.window * 1000;
+  timer = setInterval(() => { Date.now() >= deadline ? toStandby() : refresh(); }, 500);
+  refresh();
+}
+
+const SPK_ON = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+const SPK_OFF = '<svg viewBox="0 0 24 24"><path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.8 8.8 0 0 0 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 0 0 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z"/></svg>';
+function openCfg(open){
+  const c = $("#cfg");
+  c.hidden = open === undefined ? !c.hidden : !open;
+  $("#cfgBtn").classList.toggle("on", !c.hidden);
+}
+$("#cfgBtn").onclick = () => openCfg();
+function updVoiceBtn(){
+  const b = $("#voiceBtn");
+  b.innerHTML = voiceOn ? SPK_ON : SPK_OFF;
+  b.classList.toggle("on", voiceOn);
+  b.setAttribute("aria-pressed", voiceOn);
+}
+updVoiceBtn();
+$("#voiceBtn").onclick = () => {
+  voiceOn = !voiceOn;
+  store.set("jarvis_voice", voiceOn ? "on" : "off");
+  if (!voiceOn) cancelAudio();
+  updVoiceBtn();
+};
+
+function afterSpeak(){
+  if (handsFree){ armTimer(); startRec(); } else refresh();
+}
+let audioEl = null, ruVoices = [];
+const FEMALE = /svetlana|irina|dariya|daria|milena|katya|ekaterina|alena|tatyana|anna|elena|google ру|google ru|female|жен/i;
+const MALE = /pavel|dmitry|dmitri|yuri|maxim|male|муж/i;
+function score(v){
+  let n = 0;
+  if (/natural|neural|online/i.test(v.name)) n += 3;
+  if (FEMALE.test(v.name)) n += 5;
+  if (MALE.test(v.name.replace(/female/i, ""))) n -= 10;
+  return n;
+}
+function loadVoices(){
+  if (!("speechSynthesis" in window)) return;
+  ruVoices = speechSynthesis.getVoices().filter(v => /^ru/i.test(v.lang)).sort((a, b) => score(b) - score(a));
+  const sel = $("#voice"), saved = store.get("jarvis_ruvoice");
+  sel.innerHTML = "";
+  ruVoices.forEach(v => { const o = document.createElement("option"); o.value = v.name; o.textContent = v.name; sel.appendChild(o); });
+  if (!ruVoices.length){ const o = document.createElement("option"); o.textContent = "Русский голос не найден"; sel.appendChild(o); }
+  if (saved && ruVoices.some(v => v.name === saved)) sel.value = saved;
+}
+function chosenVoice(){ const n = $("#voice").value; return ruVoices.find(v => v.name === n) || ruVoices[0] || null; }
+if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = loadVoices;
+loadVoices();
+$("#xikey").value = store.get("jarvis_xikey");
+$("#xivoice").value = store.get("jarvis_xivoice");
+$("#xikey").oninput = () => store.set("jarvis_xikey", $("#xikey").value.trim());
+$("#xivoice").oninput = () => store.set("jarvis_xivoice", $("#xivoice").value.trim());
+$("#xipreset").value = [...$("#xipreset").options].some(o => o.value === $("#xivoice").value) ? $("#xivoice").value : "";
+$("#xipreset").onchange = () => {
+  const v = $("#xipreset").value;
+  if (!v) return;
+  $("#xivoice").value = v; store.set("jarvis_xivoice", v);
+  speak("Привет, хозяин. Так я буду звучать.", () => {});
+};
+$("#voice").onchange = () => { store.set("jarvis_ruvoice", $("#voice").value); speak("Привет, хозяин. Так я буду звучать.", () => {}); };
+
+function cancelAudio(){
+  if (audioEl){ audioEl.pause(); audioEl = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+function browserSpeak(text, end){
+  if (!("speechSynthesis" in window)){ end(); return; }
+  const u = new SpeechSynthesisUtterance(text);
+  const v = chosenVoice();
+  u.lang = v ? v.lang : "ru-RU";
+  if (v) u.voice = v;
+  u.pitch = 1.1; u.rate = S.rate;
+  u.onend = u.onerror = end;
+  speechSynthesis.speak(u);
+}
+function ttsNote(m){ $("#ttsnote").textContent = m; }
+function ttsHint(st, det){
+  const d = String(det || "");
+  if (/quota/i.test(d)) return "бесплатный лимит символов ElevenLabs закончился";
+  if (st === 401) return /unusual/i.test(d) ? "ElevenLabs блокирует запросы (похоже на VPN или прокси)" : "ключ ElevenLabs не принят";
+  if (st === 402 || st === 403 || /paid|subscription|library/i.test(d)) return "этот голос недоступен на бесплатном тарифе, выбери другой";
+  if (st === 404 || /voice_not_found/i.test(d)) return "голос с таким ID не найден, выбери другой";
+  if (st === 429) return "лимит запросов ElevenLabs";
+  return "код " + st + (d ? ", " + d : "");
+}
+async function cloudSpeak(text, key, id, end){
+  try {
+    const vid = $("#xivoice").value.trim() || "EXAVITQu4vr4xnSDxMaL";
+    const r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(vid) + "?output_format=mp3_44100_64", {
+      method: "POST",
+      headers: {"xi-api-key": key, "Content-Type": "application/json"},
+      body: JSON.stringify({text, model_id: "eleven_multilingual_v2", voice_settings: {stability: 0.45, similarity_boost: 0.8}})
+    });
+    if (!r.ok){
+      let d = {}; try { d = await r.json(); } catch(e){}
+      const det = d.detail && (typeof d.detail === "string" ? d.detail : (d.detail.status || d.detail.message));
+      throw new Error(ttsHint(r.status, det));
+    }
+    const blob = await r.blob();
+    if (id !== speakId) return;
+    const a = new Audio(URL.createObjectURL(blob));
+    audioEl = a; a.playbackRate = Math.min(2, S.rate / 1.05);
+    a.onended = a.onerror = () => { URL.revokeObjectURL(a.src); end(); };
+    await a.play();
+    ttsNote("Сейчас звучит голос ElevenLabs.");
+  } catch(e){
+    if (id !== speakId) return;
+    const note = "ElevenLabs не сработал: " + e.message + ". Звучит голос браузера.";
+    add("sys", note); ttsNote(note);
+    browserSpeak(text, end);
+  }
+}
+function splitTts(t, max){
+  const out = [];
+  const sents = t.replace(/\s+/g, " ").match(/[^.!?…]+[.!?…]*\s*/g) || [t];
+  let cur = "";
+  for (let x of sents){
+    while (x.length > max){
+      let cut = x.lastIndexOf(" ", max); if (cut < 40) cut = max;
+      if (cur.trim()){ out.push(cur.trim()); cur = ""; }
+      out.push(x.slice(0, cut).trim()); x = x.slice(cut);
+    }
+    if ((cur + x).length > max){ if (cur.trim()) out.push(cur.trim()); cur = x; } else cur += x;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out.filter(Boolean);
+}
+function groqTtsHint(st, d){
+  const m = d && d.error && d.error.message ? d.error.message : "";
+  if (/terms|accept/i.test(m)) return "нужно один раз принять условия модели Orpheus в консоли Groq (раздел Playground, Text to Speech)";
+  if (st === 401) return "ключ Groq не принят";
+  if (st === 429) return "лимит озвучки Groq, подожди минуту";
+  return "код " + st + (m ? ": " + m : "");
+}
+function playBlob(blob){
+  return new Promise((res, rej) => {
+    const a = new Audio(URL.createObjectURL(blob));
+    audioEl = a;
+    a.playbackRate = Math.min(2, S.rate / 1.05);
+    a.onended = () => { URL.revokeObjectURL(a.src); res(); };
+    a.onpause = () => res();
+    a.onerror = () => rej(new Error("не удалось воспроизвести звук"));
+    a.play().catch(rej);
+  });
+}
+async function groqSpeak(text, key, id, end){
+  try {
+    const parts = splitTts(text, 190).slice(0, 10);
+    const req = p => fetch("https://api.groq.com/openai/v1/audio/speech", {
+      method: "POST",
+      headers: {"Content-Type":"application/json", "Authorization":"Bearer " + key},
+      body: JSON.stringify({model:"canopylabs/orpheus-v1-english", voice:S.gvoice, input:p, response_format:"wav"})
+    }).then(async r => {
+      if (!r.ok){ let d = {}; try { d = await r.json(); } catch(e){} throw new Error(groqTtsHint(r.status, d)); }
+      return r.blob();
+    });
+    let next = req(parts[0]); next.catch(() => {});
+    for (let i = 0; i < parts.length; i++){
+      const blob = await next;
+      if (id !== speakId) return;
+      if (i + 1 < parts.length){ next = req(parts[i + 1]); next.catch(() => {}); }
+      if (i === 0) ttsNote("Сейчас звучит голос Groq Orpheus.");
+      await playBlob(blob);
+      if (id !== speakId) return;
+    }
+    end();
+  } catch(e){
+    if (id !== speakId) return;
+    const note = "Озвучка Groq не сработала: " + e.message + ". Звучит голос браузера.";
+    add("sys", note); ttsNote(note);
+    browserSpeak(text, end);
+  }
+}
+function speak(t, done){
+  if (!voiceOn){ done && done(); return; }
+  cancelAudio();
+  const id = ++speakId;
+  const clean = t.replace(/[*_`#]/g, "");
+  currentSpoken = clean;
+  speaking = true; refresh();
+  const end = () => {
+    if (id !== speakId) return;
+    speaking = false; lastSpoken = clean; lastSpokenEnd = Date.now(); refresh();
+    done && done();
+  };
+  const key = $("#xikey").value.trim(), gk = $("#key").value.trim();
+  const prov = S.tts === "groq" ? "groq" : S.tts === "browser" ? "browser" : key ? "eleven" : "browser";
+  if (prov === "groq") groqSpeak(clean, gk, id, end);
+  else if (prov === "eleven") cloudSpeak(clean, key, id, end);
+  else {
+    if (S.tts !== "browser") ttsNote("Ключ ElevenLabs не введён: звучит голос браузера. Выбери «Groq Orpheus» в списке «Озвучка» или введи ключ.");
+    browserSpeak(clean, end);
+  }
+}
+function bargeIn(){
+  if (!speaking) return;
+  speakId++; speaking = false;
+  lastSpoken = currentSpoken; lastSpokenEnd = Date.now();
+  cancelAudio();
+  if (handsFree) armTimer(); else refresh();
+}
+reactor.onclick = bargeIn;
+function ack(){
+  add("bot", "Да, мой хозяин.");
+  speak("Да, мой хозяин.", afterSpeak);
+}
+
+function errText(status, data){
+  const m = data && data.error && data.error.message ? data.error.message : "";
+  if (status === 401) return "Groq не принял ключ. Проверь, что вставил его целиком и без пробелов.";
+  if (status === 429) return "Лимит запросов Groq. Подожди минуту и спроси снова.";
+  if (status === 404 || status === 400) return "Ошибка запроса" + (m ? ": " + m : ". Проверь название модели в настройках.");
+  return "Ошибка " + status + (m ? ": " + m : "");
+}
+
+async function send(text){
+  text = text.trim();
+  if (!text || busy) return;
+  if (await tryApp(text)) return;
+  const key = $("#key").value.trim();
+  if (!key){
+    add("sys", "Сначала вставь API-ключ Groq в настройках.");
+    openCfg(true);
+    afterSpeak();
+    return;
+  }
+  const model = $("#model").value.trim() || "qwen/qwen3.8-27b";
+  store.set("jarvis_key", key);
+  store.set("jarvis_model5", model);
+
+  speakId++; speaking = false;
+  cancelAudio();
+  clearTimer();
+
+  add("user", text);
+  history.push({role:"user", content:text});
+  input.value = ""; resize();
+  const wantCode = CODEKEY.test(text) || (lastCode && EDITKEY.test(text));
+  const doSearch = !wantCode && (S.search === "always" || (S.search === "auto" && needSearch(text)));
+  searching = doSearch; busy = true; refresh();
+  const wait = add("bot wait", "…");
+
+  let found = null, spoken = "";
+  if (doSearch){
+    wait.textContent = "Ищу в интернете…";
+    try { found = await webSearch(text, key); }
+    catch(e){ add("sys", "Поиск не сработал (" + e.message + "). Отвечаю без него."); }
+    searching = false; refresh();
+  }
+
+  try {
+    const r = await fetch(API, {
+      method: "POST",
+      headers: {"Content-Type":"application/json", "Authorization":"Bearer " + key},
+      body: JSON.stringify(Object.assign({
+        model,
+        messages: [{role:"system", content:buildSystem() + (wantCode ? CODE_RULES : "") + searchCtx(found)}, ...compactHistory(history.slice(-S.mem))],
+        temperature: S.temp,
+        max_tokens: wantCode ? 7000 : LEN[S.len]
+      }, extra(model)))
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(errText(r.status, data));
+    const raw = (data.choices[0].message.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    const code = extractHtml(raw);
+    const talk = cleanAns(code ? stripCode(raw) : raw);
+    const ans = talk || (code ? "Готово, смотри справа." : "");
+    if (!ans) throw new Error("Пустой ответ. Попробуй ещё раз или смени модель.");
+    spoken = code ? (talk && talk.length < 160 ? talk : "Готово, смотри справа.") : ans;
+    wait.textContent = ans;
+    wait.classList.remove("wait");
+    if (found && found.urls.length) showSources(wait, found.urls);
+    if (code){ addBtn(wait, "Открыть просмотр", () => openViewer(code)); openViewer(code); }
+    history.push({role:"assistant", content:raw});
+    saveHistory();
+    if (S.auto){ turns++; if (turns % 3 === 0 || MEMKEY.test(text)) remember(key, model); }
+    busy = false; searching = false; refresh();
+    speak(spoken, afterSpeak);
+  } catch(e){
+    wait.remove();
+    history.pop();
+    add("sys", e instanceof TypeError ? "Нет связи с Groq. Проверь интернет." : e.message);
+    busy = false; searching = false;
+    afterSpeak();
+  }
+  log.scrollTop = log.scrollHeight;
+}
+
+$("#form").addEventListener("submit", e => { e.preventDefault(); send(input.value); });
+input.addEventListener("input", resize);
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); send(input.value); }
+});
+
+/* ---------- Голосовой режим «Эй, Кира» ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+function startRec(){
+  if (!rec || !handsFree || recRunning) return;
+  try { rec.start(); } catch(e){}
+}
+function stopRec(){ if (rec){ try { rec.abort(); } catch(e){} } }
+
+const ENDW = new Set(["пока","достаточно","хватит","отбой","свидания","до","спасибо","ладно","все","ну","давай","на","сегодня","хорош"]);
+function isEnd(rest){
+  const w = norm(rest);
+  return w.length > 0 && w.length <= 4 && w.some(x => ["пока","достаточно","хватит","отбой","свидания"].includes(x)) && w.every(x => ENDW.has(x));
+}
+function handle(raw){
+  const t = raw.trim();
+  if (!t || busy || !handsFree) return;
+  if (Date.now() - lastSpokenEnd < 3000 && isEcho(t, lastSpoken)) return;
+  const m = findWake(t);
+  if (mode === "standby" && !m) return;
+  const rest = (m ? t.slice(m.end) : t).replace(/^[\s,.!?:;—-]+/, "");
+  if (isEnd(rest)){ toStandby(); return; }
+  mode = "active";
+  const w = norm(rest);
+  if (w.length && w.every(x => STOP.has(x))){ armTimer(); return; }
+  if (rest.length > 1) send(rest); else ack();
+}
+
+if (!SR){
+  $("#mic").hidden = true;
+} else {
+  rec = new SR();
+  rec.lang = "ru-RU";
+  rec.maxAlternatives = 4;
+  rec.continuous = true;
+  rec.interimResults = true;
+  let errBurst = [];
+  rec.onstart = () => { recRunning = true; };
+  rec.onend = () => {
+    recRunning = false;
+    if (handsFree) setTimeout(startRec, 300);
+  };
+  rec.onspeechstart = () => { if (timer && mode === "active") deadline = Date.now() + S.window * 1000; };
+  rec.onresult = ev => {
+    for (let i = ev.resultIndex; i < ev.results.length; i++){
+      const r = ev.results[i], alts = Array.from(r).map(a => a.transcript);
+      const hit = alts.find(x => findWake(x));
+      const t = (speaking || mode === "standby") && hit ? hit : alts[0];
+      if (speaking && S.barge && isBarge(t)) bargeIn();
+      if (!speaking && r.isFinal) handle(t);
+    }
+  };
+  rec.onerror = ev => {
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed"){
+      handsFree = false; clearTimer();
+      $("#mic").classList.remove("on");
+      add("sys", "Микрофон заблокирован. Разреши доступ в браузере; на локальном файле он может не работать, нужен https.");
+      refresh();
+    } else if (ev.error !== "no-speech" && ev.error !== "aborted"){
+      errBurst.push(Date.now());
+      errBurst = errBurst.filter(x => Date.now() - x < 6000);
+      if (errBurst.length >= 3){
+        handsFree = false; clearTimer(); stopRec(); errBurst = [];
+        $("#mic").classList.remove("on");
+        add("sys", "Распознавание речи не запускается (" + ev.error + "). Голосовой режим выключен, нажми на микрофон, чтобы попробовать снова.");
+        refresh();
+      }
+    }
+  };
+  let wakeLock = null;
+  async function keepAwake(){
+    try {
+      if (handsFree && "wakeLock" in navigator && !wakeLock){
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.onrelease = () => { wakeLock = null; };
+      }
+    } catch(e){}
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && handsFree){ startRec(); keepAwake(); }
+  });
+  $("#mic").onclick = () => {
+    if (!handsFree){
+      handsFree = true; mode = "standby";
+      if (!voiceOn){ voiceOn = true; store.set("jarvis_voice", "on"); updVoiceBtn(); }
+      startRec(); keepAwake();
+    } else {
+      handsFree = false; clearTimer(); stopRec();
+      if (wakeLock){ wakeLock.release().catch(() => {}); wakeLock = null; }
+    }
+    $("#mic").classList.toggle("on", handsFree);
+    refresh();
+  };
+}
+
+try { history = JSON.parse(store.get("jarvis_history") || "[]"); } catch(e){ history = []; }
+if (history.length){
+  history.slice(-20).forEach(m => {
+    if (m.role !== "assistant"){ add("user", m.content); return; }
+    const c = extractHtml(m.content);
+    const d = add("bot", cleanAns(c ? stripCode(m.content) : m.content) || "Готово, смотри справа.");
+    if (c){ lastCode = c; addBtn(d, "Открыть просмотр", () => openViewer(c)); }
+  });
+  add("bot", "С возвращением, хозяин. Продолжаем.");
+} else add("bot", "Готова. Нажми на микрофон и скажи «Эй, Кира» или просто пиши.");
+if (location.protocol === "file:") add("sys", "Страница открыта как локальный файл, поэтому браузер будет спрашивать микрофон снова и снова. Открой её по адресу http://localhost или по https-ссылке, тогда достаточно разрешить один раз.");
+refresh();
+</script>
+</body>
+</html>
